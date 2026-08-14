@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>時間割変更アプリ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>時間割変更アプリ</h1>
+    <p>個人利用・GitHub Pages版 / データはブラウザに保存</p>
+  </div>
+  <span class="version">v1.0</span>
+</header>
+
+<nav class="tabs">
+  <button data-tab="daily" class="active">日々の変更</button>
+  <button data-tab="base">通常時間割</button>
+  <button data-tab="conditions">変更条件</button>
+  <button data-tab="teachers">教員設定</button>
+  <button data-tab="history">変更履歴</button>
+  <button data-tab="backup">バックアップ</button>
+</nav>
+
+<main>
+  <section id="daily" class="tab active">
+    <div class="toolbar card">
+      <div><label>対象クラス</label><select id="dailyClass"></select></div>
+      <div><label>対象日</label><input type="date" id="dailyDate"></div>
+      <button id="undoBtn" class="sub">1つ前に戻す</button>
+      <button id="resetDayBtn" class="danger-outline">この日の変更を解除</button>
+    </div>
+    <div class="card">
+      <div class="heading-row">
+        <div>
+          <h2>変更後時間割</h2>
+          <p class="muted">セルをクリックすると、移動・入替・担当変更・代講・欠員表示を手動編集できます。</p>
+        </div>
+        <div class="legend">
+          <span><i class="dot changed"></i>変更あり</span>
+          <span><i class="dot conflict"></i>重複</span>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="dailyTable"></table></div>
+      <div id="dailyStatus"></div>
+    </div>
+    <div class="card">
+      <h2>当日の変更一覧</h2>
+      <div id="dailyChanges"></div>
+    </div>
+  </section>
+
+  <section id="base" class="tab">
+    <div class="toolbar card">
+      <div><label>クラス</label><select id="baseClass"></select></div>
+      <button id="addClassBtn" class="sub">クラス追加</button>
+      <button id="renameClassBtn" class="sub">クラス名変更</button>
+      <button id="deleteClassBtn" class="danger-outline">クラス削除</button>
+    </div>
+    <div class="card">
+      <h2>通常時間割の登録</h2>
+      <p class="muted">各セルをクリックして、科目・担当教員（複数可）・教室を登録してください。</p>
+      <div class="table-wrap"><table id="baseTable"></table></div>
+    </div>
+  </section>
+
+  <section id="conditions" class="tab">
+    <div class="card">
+      <h2>変更条件の一括入力</h2>
+      <p class="muted">1行につき1条件。例：<code>田中,不在,月,1-4</code>　または　<code>体育館,使用不可,火,3-5</code></p>
+      <textarea id="conditionText" rows="10" placeholder="田中,不在,月,1-4&#10;佐藤,不在,火,終日&#10;体育館,使用不可,木,3-5"></textarea>
+      <div class="actions">
+        <button id="analyzeConditionsBtn" class="primary">条件を解析</button>
+        <button id="applyConditionsBtn" class="sub">安全な変更だけ自動反映</button>
+      </div>
+      <div id="conditionResult"></div>
+    </div>
+  </section>
+
+  <section id="teachers" class="tab">
+    <div class="card">
+      <h2>教員設定</h2>
+      <p class="muted">代講候補として使う教員名を登録します。通常時間割から自動抽出した教員も表示されます。</p>
+      <div class="inline-form">
+        <input id="teacherName" placeholder="教員名">
+        <button id="addTeacherBtn" class="primary">追加</button>
+      </div>
+      <div id="teacherList" class="chips"></div>
+    </div>
+  </section>
+
+  <section id="history" class="tab">
+    <div class="card">
+      <h2>変更履歴</h2>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <section id="backup" class="tab">
+    <div class="card">
+      <h2>バックアップ</h2>
+      <p>アプリ本体を更新してもデータを引き継げるよう、定期的にJSONを書き出してください。</p>
+      <div class="actions">
+        <button id="exportBtn" class="primary">JSONを書き出す</button>
+        <label class="file-button">JSONを読み込む<input id="importInput" type="file" accept=".json" hidden></label>
+        <button id="clearAllBtn" class="danger-outline">全データ初期化</button>
+      </div>
+      <div class="note">
+        <strong>重要：</strong>PC内のHTMLファイルで入力したデータと、GitHub Pagesで公開したページのデータは別です。
+        本番運用はGitHub Pages公開後に登録を始めるか、JSONで移行してください。
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="lessonDialog">
+  <form method="dialog" id="lessonForm">
+    <div class="dialog-head"><strong id="dialogTitle">授業編集</strong><button value="cancel" class="icon">×</button></div>
+    <div class="dialog-body">
+      <div class="form-grid">
+        <div><label>曜日</label><select id="editDay"></select></div>
+        <div><label>時限</label><select id="editPeriod"></select></div>
+        <div class="full"><label>科目</label><input id="editSubject"></div>
+        <div class="full"><label>担当教員（複数の場合は「,」区切り）</label><input id="editTeachers" placeholder="田中,佐藤,山口"></div>
+        <div class="full"><label>欠員表示（（名前）にする教員。「,」区切り）</label><input id="editAbsent" placeholder="佐藤"></div>
+        <div class="full"><label>代講教員（必要な場合）</label><input id="editSubstitute" placeholder="鈴木"></div>
+        <div class="full"><label>教室</label><input id="editRoom"></div>
+      </div>
+      <div id="candidateBox" class="candidate-box"></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" id="deleteLessonBtn" class="danger-outline">削除</button>
+      <button value="cancel" class="sub">キャンセル</button>
+      <button type="button" id="saveLessonBtn" class="primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
