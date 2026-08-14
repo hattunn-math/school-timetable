@@ -12,7 +12,7 @@
     <h1>時間割変更アプリ</h1>
     <p>個人利用・GitHub Pages版 / データはブラウザに保存</p>
   </div>
-  <span class="version">v1.0</span>
+  <span class="version">v1.1</span>
 </header>
 
 <nav class="tabs">
@@ -61,7 +61,7 @@
     </div>
     <div class="card">
       <h2>通常時間割の登録</h2>
-      <p class="muted">各セルをクリックして、科目・担当教員（複数可）・教室を登録してください。</p>
+      <p class="muted">横＝曜日、縦＝校時です。セルをクリックして、科目・担当教員（複数可）・教室を登録してください。</p>
       <div class="table-wrap"><table id="baseTable"></table></div>
     </div>
   </section>
@@ -108,8 +108,8 @@
         <button id="clearAllBtn" class="danger-outline">全データ初期化</button>
       </div>
       <div class="note">
-        <strong>重要：</strong>PC内のHTMLファイルで入力したデータと、GitHub Pagesで公開したページのデータは別です。
-        本番運用はGitHub Pages公開後に登録を始めるか、JSONで移行してください。
+        <strong>重要：</strong>GitHub Pages上で登録したデータは、アプリ更新後も同じURL・同じブラウザなら原則そのまま残ります。
+        更新前にはJSONバックアップを取ることをおすすめします。
       </div>
     </div>
   </section>
@@ -131,6 +131,8 @@
       <div id="candidateBox" class="candidate-box"></div>
     </div>
     <div class="dialog-actions">
+      <button type="button" id="copyLessonBtn" class="sub">セルをコピー</button>
+      <button type="button" id="pasteLessonBtn" class="sub">貼り付け</button>
       <button type="button" id="deleteLessonBtn" class="danger-outline">削除</button>
       <button value="cancel" class="sub">キャンセル</button>
       <button type="button" id="saveLessonBtn" class="primary">保存</button>
