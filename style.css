@@ -24,3 +24,15 @@ dialog{border:0;border-radius:14px;padding:0;width:min(620px,94vw);box-shadow:0 
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.form-grid .full{grid-column:1/-1}.candidate-box{margin-top:12px}.candidate-btn{margin:4px 5px 0 0;background:#eef2f8;padding:6px 9px;font-size:12px}
 code{background:#f2f4f7;padding:2px 5px;border-radius:5px}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.heading-row{display:block}}
+
+.participant-checks{
+  display:flex;flex-wrap:wrap;gap:7px;padding:9px;border:1px solid var(--line);
+  border-radius:8px;background:#fafbfc;min-height:42px
+}
+.participant-checks label{
+  margin:0;display:flex;align-items:center;gap:5px;background:#fff;
+  border:1px solid var(--line);border-radius:999px;padding:5px 9px;
+  color:var(--text);font-size:13px;cursor:pointer
+}
+.participant-checks input{margin:0;padding:0}
+.participants{font-size:11px;color:#7a5b00;margin-top:3px}

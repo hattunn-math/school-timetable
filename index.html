@@ -12,7 +12,7 @@
     <h1>時間割変更アプリ</h1>
     <p>個人利用・GitHub Pages版 / データはブラウザに保存</p>
   </div>
-  <span class="version">v1.1</span>
+  <span class="version">v1.4</span>
 </header>
 
 <nav class="tabs">
@@ -123,10 +123,19 @@
         <div><label>曜日</label><select id="editDay"></select></div>
         <div><label>時限</label><select id="editPeriod"></select></div>
         <div class="full"><label>科目</label><input id="editSubject"></div>
+        <div class="full">
+          <label>参加クラス（合同授業の場合は複数選択）</label>
+          <div id="participantChecks" class="participant-checks"></div>
+          <div class="small">体育などの合同授業では、参加するクラスすべてにチェックしてください。</div>
+        </div>
         <div class="full"><label>担当教員（複数の場合は「,」区切り）</label><input id="editTeachers" placeholder="田中,佐藤,山口"></div>
         <div class="full"><label>欠員表示（（名前）にする教員。「,」区切り）</label><input id="editAbsent" placeholder="佐藤"></div>
         <div class="full"><label>代講教員（必要な場合）</label><input id="editSubstitute" placeholder="鈴木"></div>
-        <div class="full"><label>教室</label><input id="editRoom"></div>
+        <div class="full">
+          <label>教室・授業場所（複数の場合は「,」区切り）</label>
+          <input id="editRooms" placeholder="2-1,2-2,選択教室A">
+          <div class="small">展開授業では複数の教室をまとめて登録できます。</div>
+        </div>
       </div>
       <div id="candidateBox" class="candidate-box"></div>
     </div>
