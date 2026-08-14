@@ -41,11 +41,19 @@ function setupTabs(){$$(".tabs button").forEach(b=>b.onclick=()=>{$$(".tabs butt
 function fillSelects(){["dailyClass","baseClass"].forEach(id=>{const old=$("#"+id).value;$("#"+id).innerHTML=state.classes.map(c=>`<option>${esc(c)}</option>`).join("");if(state.classes.includes(old))$("#"+id).value=old})}
 
 function renderGrid(table,cls,date){
-  let h="<tr><th>曜日</th>"+PERIODS.map(p=>`<th>${p}限</th>`).join("")+"</tr>";
-  DAYS.forEach(d=>{h+=`<tr><th>${d}</th>`;PERIODS.forEach(p=>{const l=getDaily(cls,date,d,p),changed=isChanged(cls,date,d,p),conflict=hasConflict(cls,date,d,p);
-    h+=`<td class="slot ${changed?"changed-cell":""} ${conflict?"conflict-cell":""}" data-day="${d}" data-period="${p}">`;
-    h+=l?`<div class="subject">${esc(l.subject)}</div><div class="teacher">${esc(teachersText(l))}</div>${l.room?`<div class="room">${esc(l.room)}</div>`:""}`:`<div class="empty">空き</div>`;h+="</td>"});h+="</tr>"});
-  table.innerHTML=h;table.querySelectorAll(".slot").forEach(td=>td.onclick=()=>openEditor(false,cls,date,td.dataset.day,+td.dataset.period))
+  let h="<tr><th>校時</th>"+DAYS.map(d=>`<th>${d}曜日</th>`).join("")+"</tr>";
+  PERIODS.forEach(p=>{
+    h+=`<tr><th>${p}限</th>`;
+    DAYS.forEach(d=>{
+      const l=getDaily(cls,date,d,p),changed=isChanged(cls,date,d,p),conflict=hasConflict(cls,date,d,p);
+      h+=`<td class="slot ${changed?"changed-cell":""} ${conflict?"conflict-cell":""}" data-day="${d}" data-period="${p}">`;
+      h+=l?`<div class="subject">${esc(l.subject)}</div><div class="teacher">${esc(teachersText(l))}</div>${l.room?`<div class="room">${esc(l.room)}</div>`:""}`:`<div class="empty">空き</div>`;
+      h+="</td>";
+    });
+    h+="</tr>";
+  });
+  table.innerHTML=h;
+  table.querySelectorAll(".slot").forEach(td=>td.onclick=()=>openEditor(false,cls,date,td.dataset.day,+td.dataset.period));
 }
 function renderBase(){
   const cls=$("#baseClass").value;if(!cls)return;
