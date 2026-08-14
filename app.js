@@ -326,6 +326,18 @@ function applyConditions(){
   });
   save();renderAll();alert(`${safe.length}件を自動反映しました。`);
 }
+function ensureZeroPeriodButton(){
+  if($("#zeroPeriodBtn"))return;
+  const baseToolbar=$("#base .toolbar");
+  if(!baseToolbar)return;
+  const btn=document.createElement("button");
+  btn.id="zeroPeriodBtn";
+  btn.className="sub";
+  btn.type="button";
+  baseToolbar.appendChild(btn);
+  btn.onclick=toggleZeroPeriod;
+}
+
 function updateZeroPeriodButton(){
   const btn=$("#zeroPeriodBtn");
   const cls=$("#baseClass")?.value;
