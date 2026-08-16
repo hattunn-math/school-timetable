@@ -12,7 +12,7 @@
     <h1>時間割変更アプリ</h1>
     <p>個人利用・GitHub Pages版 / データはブラウザに保存</p>
   </div>
-  <span class="version">v1.5</span>
+  <span class="version">v1.6</span>
 </header>
 
 <nav class="tabs">
@@ -25,36 +25,40 @@
 </nav>
 
 <main>
+  <!-- 日々の変更 -->
   <section id="daily" class="tab active">
     <div class="toolbar card">
-      <div><label>対象日</label><input type="date" id="dailyDate"></div>
+      <div>
+        <label>表示</label>
+        <div class="segmented">
+          <button id="dailyModeDay" class="mode-btn active" type="button">曜日別</button>
+          <button id="dailyModeClass" class="mode-btn" type="button">クラス別</button>
+        </div>
+      </div>
+      <div><label>基準日</label><input type="date" id="dailyDate"></div>
       <div id="selectedWeekday" class="date-weekday"></div>
-      <button id="undoBtn" class="sub">1つ前に戻す</button>
+      <div id="dailyClassWrap" class="hidden"><label>クラス</label><select id="dailyClass"></select></div>
       <button id="resetDayBtn" class="danger-outline">この日の変更をすべて解除</button>
     </div>
 
     <div class="card">
       <div class="heading-row">
         <div>
-          <h2>全クラスの日別時間割</h2>
-          <p class="muted">指定した日の全学年・全クラスを一覧表示します。セルをクリックするとその授業を編集できます。</p>
+          <h2 id="dailyViewTitle">全クラスの日別時間割</h2>
+          <p id="dailyViewHelp" class="muted">指定した日の全学年・全クラスを一覧表示します。</p>
         </div>
         <div class="legend">
           <span><i class="dot changed"></i>変更あり</span>
-          <span><i class="dot conflict"></i>重複</span>
+          <span><i class="dot conflict"></i>重複・勤務時間外</span>
         </div>
       </div>
-      <div class="table-wrap"><table id="dailyTable" class="school-day-table"></table></div>
+      <div class="table-wrap"><table id="dailyTable" class="fixed-timetable"></table></div>
       <div id="dailyStatus"></div>
     </div>
 
     <div class="card">
-      <div class="heading-row">
-        <div>
-          <h2>教員別 担当一覧</h2>
-          <p class="muted">指定日に、各先生がどのクラスで何の授業を担当しているか表示します。先生の並び順は「教員設定」の教科表示順に従います。</p>
-        </div>
-      </div>
+      <h2>教員別 担当一覧</h2>
+      <p class="muted">基準日に、各先生がどのクラスで何の授業を担当しているかを、担当教科順に表示します。</p>
       <div class="table-wrap"><table id="teacherDayTable" class="teacher-day-table"></table></div>
     </div>
 
@@ -64,24 +68,36 @@
     </div>
   </section>
 
+  <!-- 通常時間割 -->
   <section id="base" class="tab">
     <div class="toolbar card">
-      <div><label>クラス</label><select id="baseClass"></select></div>
+      <div>
+        <label>表示</label>
+        <div class="segmented">
+          <button id="baseModeClass" class="mode-btn active" type="button">クラス別</button>
+          <button id="baseModeDay" class="mode-btn" type="button">曜日別</button>
+        </div>
+      </div>
+      <div id="baseClassWrap"><label>クラス</label><select id="baseClass"></select></div>
+      <div id="baseDayWrap" class="hidden"><label>曜日</label><select id="baseDay"></select></div>
       <button id="addClassBtn" class="sub">クラス追加</button>
       <button id="renameClassBtn" class="sub">クラス名変更</button>
       <button id="deleteClassBtn" class="danger-outline">クラス削除</button>
+      <button id="zeroPeriodBtn" class="sub">0校時を追加</button>
     </div>
+
     <div class="card">
-      <h2>通常時間割の登録</h2>
-      <p class="muted">横＝曜日、縦＝校時です。セルをクリックして、科目・担当教員（複数可）・教室を登録してください。</p>
-      <div class="table-wrap"><table id="baseTable"></table></div>
+      <h2 id="baseViewTitle">通常時間割の登録</h2>
+      <p class="muted">セルをクリックして、科目・参加クラス・担当教員・教室を登録してください。</p>
+      <div class="table-wrap"><table id="baseTable" class="fixed-timetable"></table></div>
     </div>
   </section>
 
+  <!-- 変更条件 -->
   <section id="conditions" class="tab">
     <div class="card">
       <h2>変更条件の一括入力</h2>
-      <p class="muted">1行につき1条件。例：<code>田中,不在,月,1-4</code>　または　<code>体育館,使用不可,火,3-5</code></p>
+      <p class="muted">1行につき1条件。例：<code>田中,不在,月,1-4</code> / <code>体育館,使用不可,火,3-5</code></p>
       <textarea id="conditionText" rows="10" placeholder="田中,不在,月,1-4&#10;佐藤,不在,火,終日&#10;体育館,使用不可,木,3-5"></textarea>
       <div class="actions">
         <button id="analyzeConditionsBtn" class="primary">条件を解析</button>
@@ -91,70 +107,79 @@
     </div>
   </section>
 
+  <!-- 教員設定 -->
   <section id="teachers" class="tab">
     <div class="card">
       <h2>教員設定</h2>
-      <p class="muted">代講候補として使う教員名を登録します。通常時間割から自動抽出した教員も表示されます。</p>
-      <div class="inline-form">
-        <input id="teacherName" placeholder="教員名">
-        <button id="addTeacherBtn" class="primary">追加</button>
+      <p class="muted">教員ごとに担当教科・勤務形態・勤務可能校時を設定します。教員別一覧は下の教科順で自動整列します。</p>
+      <div class="teacher-add-form">
+        <div><label>教員名</label><input id="teacherName" placeholder="例：田中"></div>
+        <div><label>担当教科</label><select id="teacherDepartment"></select></div>
+        <div><label>勤務形態</label><select id="teacherEmployment"><option value="常勤">常勤</option><option value="非常勤">非常勤</option></select></div>
+        <button id="addTeacherBtn" class="primary">教員を追加</button>
       </div>
-      <div id="teacherList" class="chips"></div>
-
-      <hr class="section-divider">
-      <h2>教員表示の教科順</h2>
-      <p class="muted">通常時間割に登録されている科目を自動抽出します。↑↓で並べ替えると、「教員別 担当一覧」の先生の表示順に反映されます。</p>
-      <div id="subjectOrderList" class="subject-order-list"></div>
+      <div class="department-order">
+        表示順：国語 → 数学 → 英語 → 理科 → 社会 → 芸術 → 家庭科 → 体育 → 商業
+      </div>
+      <div id="teacherCards" class="teacher-cards"></div>
     </div>
   </section>
 
   <section id="history" class="tab">
-    <div class="card">
-      <h2>変更履歴</h2>
-      <div id="historyList"></div>
-    </div>
+    <div class="card"><h2>変更履歴</h2><div id="historyList"></div></div>
   </section>
 
   <section id="backup" class="tab">
     <div class="card">
       <h2>バックアップ</h2>
-      <p>アプリ本体を更新してもデータを引き継げるよう、定期的にJSONを書き出してください。</p>
+      <p>更新前や大きな編集後にJSONを書き出しておくことをおすすめします。</p>
       <div class="actions">
         <button id="exportBtn" class="primary">JSONを書き出す</button>
         <label class="file-button">JSONを読み込む<input id="importInput" type="file" accept=".json" hidden></label>
         <button id="clearAllBtn" class="danger-outline">全データ初期化</button>
       </div>
-      <div class="note">
-        <strong>重要：</strong>GitHub Pages上で登録したデータは、アプリ更新後も同じURL・同じブラウザなら原則そのまま残ります。
-        更新前にはJSONバックアップを取ることをおすすめします。
-      </div>
+      <div class="note"><strong>重要：</strong>同じGitHub Pages URL・同じブラウザなら、アプリ更新後もLocalStorageのデータを引き継ぎます。</div>
     </div>
   </section>
 </main>
 
+<!-- 授業編集 -->
 <dialog id="lessonDialog">
   <form method="dialog" id="lessonForm">
     <div class="dialog-head"><strong id="dialogTitle">授業編集</strong><button value="cancel" class="icon">×</button></div>
     <div class="dialog-body">
       <div class="form-grid">
         <div><label>曜日</label><select id="editDay"></select></div>
-        <div><label>時限</label><select id="editPeriod"></select></div>
-        <div class="full"><label>科目</label><input id="editSubject"></div>
+        <div><label>校時</label><select id="editPeriod"></select></div>
+        <div class="full"><label>科目名</label><input id="editSubject" placeholder="例：数学Ⅱ / LHR / 探究"></div>
+
         <div class="full">
           <label>参加クラス（合同授業の場合は複数選択）</label>
-          <div id="participantChecks" class="participant-checks"></div>
-          <div class="small">体育などの合同授業では、参加するクラスすべてにチェックしてください。</div>
+          <div id="participantChecks" class="choice-grid"></div>
         </div>
-        <div class="full"><label>担当教員（複数の場合は「,」区切り）</label><input id="editTeachers" placeholder="田中,佐藤,山口"></div>
-        <div class="full"><label>欠員表示（（名前）にする教員。「,」区切り）</label><input id="editAbsent" placeholder="佐藤"></div>
-        <div class="full"><label>代講教員（必要な場合）</label><input id="editSubstitute" placeholder="鈴木"></div>
+
+        <div class="full">
+          <label>担当教員（複数選択可）</label>
+          <div id="teacherChecks" class="choice-grid"></div>
+          <div id="teacherUnregisteredNote" class="small warning-text"></div>
+        </div>
+
+        <div class="full">
+          <label>欠員表示（不在の担当教員）</label>
+          <div id="absentChecks" class="choice-grid compact"></div>
+        </div>
+
+        <div class="full">
+          <label>代講教員</label>
+          <select id="editSubstitute"><option value="">なし</option></select>
+        </div>
+
         <div class="full">
           <label>教室・授業場所（複数の場合は「,」区切り）</label>
-          <input id="editRooms" placeholder="2-1,2-2,選択教室A">
-          <div class="small">展開授業では複数の教室をまとめて登録できます。</div>
+          <input id="editRooms" placeholder="例：2-1,2-2,選択教室A">
         </div>
       </div>
-      <div id="candidateBox" class="candidate-box"></div>
+      <div id="editorWarnings"></div>
     </div>
     <div class="dialog-actions">
       <button type="button" id="copyLessonBtn" class="sub">セルをコピー</button>
@@ -166,6 +191,6 @@
   </form>
 </dialog>
 
-<script src="app-v150.js"></script>
+<script src="app-v160.js"></script>
 </body>
 </html>
