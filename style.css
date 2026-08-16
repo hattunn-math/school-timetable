@@ -36,3 +36,37 @@ code{background:#f2f4f7;padding:2px 5px;border-radius:5px}
 }
 .participant-checks input{margin:0;padding:0}
 .participants{font-size:11px;color:#7a5b00;margin-top:3px}
+
+.date-weekday{
+  align-self:center;font-weight:700;padding:8px 12px;border-radius:8px;
+  background:#eef2ff;color:#274690;min-width:70px;text-align:center
+}
+.school-day-table th,.school-day-table td{min-width:135px}
+.school-day-table .sticky-first,.teacher-day-table .sticky-first{
+  position:sticky;left:0;z-index:2;background:#eef2f8
+}
+.school-day-table th.sticky-first,.teacher-day-table th.sticky-first{z-index:3}
+.not-applicable{background:#f3f4f6;color:#b0b4bb}
+.teacher-day-table{min-width:1050px}
+.teacher-day-table th,.teacher-day-table td{min-width:145px;vertical-align:top}
+.teacher-day-table .teacher-name-head,.teacher-day-table .teacher-name-cell{min-width:120px}
+.teacher-name-cell{text-align:left}
+.teacher-entry{padding:4px 2px}
+.teacher-entry + .teacher-entry{border-top:1px dashed var(--line);margin-top:5px;padding-top:7px}
+.teacher-status{display:inline-block;font-size:10px;border-radius:999px;padding:1px 6px;margin-left:3px}
+.absent-status{background:#fee2e2;color:#991b1b}
+.sub-status{background:#dcfce7;color:#166534}
+.teacher-conflict{background:#ffeaea}
+.section-divider{border:0;border-top:1px solid var(--line);margin:20px 0}
+.subject-order-list{display:grid;gap:7px;max-width:650px;margin-top:10px}
+.subject-order-item{
+  display:flex;align-items:center;gap:10px;border:1px solid var(--line);
+  border-radius:9px;padding:8px 10px;background:#fafbfc
+}
+.subject-order-number{
+  display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border-radius:50%;background:#eaf0ff;color:#2459d3;font-weight:700;font-size:12px
+}
+.subject-order-item strong{flex:1}
+.subject-order-actions{display:flex;gap:5px}
+.subject-order-actions button{padding:4px 10px}

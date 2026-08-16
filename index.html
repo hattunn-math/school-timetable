@@ -12,7 +12,7 @@
     <h1>時間割変更アプリ</h1>
     <p>個人利用・GitHub Pages版 / データはブラウザに保存</p>
   </div>
-  <span class="version">v1.4.2</span>
+  <span class="version">v1.5</span>
 </header>
 
 <nav class="tabs">
@@ -27,25 +27,37 @@
 <main>
   <section id="daily" class="tab active">
     <div class="toolbar card">
-      <div><label>対象クラス</label><select id="dailyClass"></select></div>
       <div><label>対象日</label><input type="date" id="dailyDate"></div>
+      <div id="selectedWeekday" class="date-weekday"></div>
       <button id="undoBtn" class="sub">1つ前に戻す</button>
-      <button id="resetDayBtn" class="danger-outline">この日の変更を解除</button>
+      <button id="resetDayBtn" class="danger-outline">この日の変更をすべて解除</button>
     </div>
+
     <div class="card">
       <div class="heading-row">
         <div>
-          <h2>変更後時間割</h2>
-          <p class="muted">セルをクリックすると、移動・入替・担当変更・代講・欠員表示を手動編集できます。</p>
+          <h2>全クラスの日別時間割</h2>
+          <p class="muted">指定した日の全学年・全クラスを一覧表示します。セルをクリックするとその授業を編集できます。</p>
         </div>
         <div class="legend">
           <span><i class="dot changed"></i>変更あり</span>
           <span><i class="dot conflict"></i>重複</span>
         </div>
       </div>
-      <div class="table-wrap"><table id="dailyTable"></table></div>
+      <div class="table-wrap"><table id="dailyTable" class="school-day-table"></table></div>
       <div id="dailyStatus"></div>
     </div>
+
+    <div class="card">
+      <div class="heading-row">
+        <div>
+          <h2>教員別 担当一覧</h2>
+          <p class="muted">指定日に、各先生がどのクラスで何の授業を担当しているか表示します。先生の並び順は「教員設定」の教科表示順に従います。</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="teacherDayTable" class="teacher-day-table"></table></div>
+    </div>
+
     <div class="card">
       <h2>当日の変更一覧</h2>
       <div id="dailyChanges"></div>
@@ -88,6 +100,11 @@
         <button id="addTeacherBtn" class="primary">追加</button>
       </div>
       <div id="teacherList" class="chips"></div>
+
+      <hr class="section-divider">
+      <h2>教員表示の教科順</h2>
+      <p class="muted">通常時間割に登録されている科目を自動抽出します。↑↓で並べ替えると、「教員別 担当一覧」の先生の表示順に反映されます。</p>
+      <div id="subjectOrderList" class="subject-order-list"></div>
     </div>
   </section>
 
@@ -149,6 +166,6 @@
   </form>
 </dialog>
 
-<script src="app-v142.js"></script>
+<script src="app-v150.js"></script>
 </body>
 </html>
