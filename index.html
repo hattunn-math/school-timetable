@@ -9,7 +9,7 @@
 <body>
 <header class="topbar">
   <div><h1>時間割変更アプリ</h1><p>個人利用・GitHub Pages版 / データはブラウザに保存</p></div>
-  <span class="version">v1.9.1</span>
+  <span class="version">v1.10</span>
 </header>
 <nav class="tabs">
   <button data-tab="daily" class="active">日々の変更</button>
@@ -67,7 +67,7 @@
     <div class="full"><label>担当教員（複数選択可）</label><div id="teacherChecks" class="choice-grid"></div><div id="teacherUnregisteredNote" class="small warning-text"></div></div>
     <div class="full"><label>欠員表示（不在の担当教員）</label><div id="absentChecks" class="choice-grid compact"></div></div>
     <div class="full"><label>代講教員</label><select id="editSubstitute"><option value="">なし</option></select></div>
-    <div class="full"><label>教室・授業場所（複数の場合は「,」区切り）</label><input id="editRooms" placeholder="例：2-1,2-2,選択教室A"></div>
+    <div class="full"><label>教室・授業場所（複数の場合は「 , 」区切り）</label><input id="editRooms" placeholder="例：2-1,2-2,選択教室A"></div>
   </div><div id="editorWarnings"></div></div>
   <div class="dialog-actions"><button type="button" id="copyLessonBtn" class="sub">セルをコピー</button><button type="button" id="pasteLessonBtn" class="sub">貼り付け</button><button type="button" id="deleteLessonBtn" class="danger-outline">削除</button><button value="cancel" class="sub">キャンセル</button><button type="button" id="saveLessonBtn" class="primary">保存</button></div>
 </form>
@@ -78,5 +78,6 @@
 <script src="patch-v180.js"></script>
 <script src="patch-v190.js"></script>
 <script src="patch-v191.js"></script>
+<script src="patch-v1100.js"></script>
 </body>
 </html>
