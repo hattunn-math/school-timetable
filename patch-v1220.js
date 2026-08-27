@@ -1,5 +1,4 @@
 (() => {
-  const previousAnalyzeConditions = analyzeConditions;
   const previousApplyConditions = applyConditions;
 
   function ensureV1220ConditionKinds(){
@@ -24,8 +23,10 @@
     const all=Array.isArray(state.structuredConditions)?state.structuredConditions:[];
     const absence=all.filter(c=>c && c.condition==="不在");
     const selfStudy=all.filter(c=>c && c.condition==="自習");
-    const passthrough=all.filter(c=>!absence.includes(c) && !selfStudy.includes(c));
-    return {all,absence,selfStudy,passthrough};
+    const work=all.filter(c=>c && (c.condition==="勤務可"||c.condition==="勤務不可"));
+    const room=all.filter(c=>c && c.condition==="使用不可");
+    const other=all.filter(c=>!absence.includes(c)&&!selfStudy.includes(c)&&!work.includes(c)&&!room.includes(c));
+    return {all,absence,selfStudy,work,room,other};
   }
 
   function affectedLessonsForCondition(c){
@@ -35,7 +36,10 @@
       state.classes.forEach(cls=>{
         if(!periodsForClass(cls).includes(p)) return;
         const l=getDaily(cls,date,day,p); if(!l) return;
-        if(c.targetType==="teacher" && !(l.teachers||[]).includes(c.target)) return;
+        let hit=false;
+        if(c.targetType==="teacher") hit=(l.teachers||[]).includes(c.target);
+        else if(c.targetType==="room") hit=(l.rooms||[]).includes(c.target);
+        if(!hit) return;
         const key=`${date}|${p}|${l.groupId}`;
         if(seen.has(key)) return; seen.add(key);
         out.push({date,day,p,lesson:l});
@@ -45,10 +49,10 @@
   }
 
   function renderAbsenceRouting(absence){
-    if(!absence.length) return "";
-    let count=0;
-    absence.filter(c=>c.enabled!==false).forEach(c=>{ count+=affectedLessonsForCondition(c).length; });
-    return `<div class="status warn">不在条件 ${absence.filter(c=>c.enabled!==false).length}件（該当授業 ${count}件）は自動変更しません。単独担当・複数担当とも「移動候補」で同日内の移動・入れ替えを検討します。</div>`;
+    const enabled=absence.filter(c=>c.enabled!==false);
+    if(!enabled.length) return "";
+    let count=0; enabled.forEach(c=>{count+=affectedLessonsForCondition(c).length;});
+    return `<div class="status warn">不在条件 ${enabled.length}件（該当授業 ${count}件）。時間割はここでは変更せず、「移動候補」で同日内の移動・入れ替えを検討します。</div>`;
   }
 
   function renderSelfStudySummary(selfStudy){
@@ -58,18 +62,32 @@
     return `<div class="status ok">自習指定 ${enabled.length}件（該当授業 ${count}件）は「安全な変更だけ自動反映」で自習に変更します。</div>`;
   }
 
+  function renderWorkSummary(work){
+    const enabled=work.filter(c=>c.enabled!==false);
+    if(!enabled.length) return "";
+    return `<div class="status ok">勤務可否の例外条件 ${enabled.length}件は、移動候補・空き教員検索・勤務時間外判定に反映されます。</div>`;
+  }
+
+  function renderRoomSummary(room){
+    const enabled=room.filter(c=>c.enabled!==false);
+    if(!enabled.length) return "";
+    let count=0; enabled.forEach(c=>{count+=affectedLessonsForCondition(c).length;});
+    return `<div class="status warn">教室・施設の使用不可条件 ${enabled.length}件（該当授業 ${count}件）。「移動候補」で同日内の移動・入れ替えを検討します。</div>`;
+  }
+
+  function renderOtherSummary(other){
+    const enabled=other.filter(c=>c.enabled!==false);
+    return enabled.length?`<div class="status warn">未対応の条件が ${enabled.length}件あります。</div>`:"";
+  }
+
   analyzeConditions=function(){
-    const {all,absence,selfStudy,passthrough}=splitV1220Conditions();
-    state.structuredConditions=passthrough;
-    let result;
-    try{ result=previousAnalyzeConditions(); }
-    finally{ state.structuredConditions=all; save(); }
+    const {absence,selfStudy,work,room,other}=splitV1220Conditions();
     const box=$("#conditionResult");
     if(box){
-      const extra=renderAbsenceRouting(absence)+renderSelfStudySummary(selfStudy);
-      if(extra) box.insertAdjacentHTML("afterbegin",extra);
+      const html=renderAbsenceRouting(absence)+renderRoomSummary(room)+renderSelfStudySummary(selfStudy)+renderWorkSummary(work)+renderOtherSummary(other);
+      box.innerHTML=html||`<div class="status ok">有効な変更条件はありません。</div>`;
     }
-    return result;
+    return {safe:[],issues:[]};
   };
 
   function applySelfStudyConditions(selfStudy){
@@ -92,7 +110,8 @@
   }
 
   applyConditions=function(){
-    const {all,absence,selfStudy,passthrough}=splitV1220Conditions();
+    const {all,absence,selfStudy,work,room,other}=splitV1220Conditions();
+    const passthrough=[...work,...other];
     state.structuredConditions=passthrough;
     let result;
     try{ result=previousApplyConditions(); }
@@ -101,8 +120,8 @@
     save(); renderAll();
     const box=$("#conditionResult");
     if(box){
-      const extra=renderAbsenceRouting(absence)+(selfStudyChanged?`<div class="status ok">明示指定された自習を ${selfStudyChanged}件 反映しました。</div>`:renderSelfStudySummary(selfStudy));
-      if(extra) box.insertAdjacentHTML("afterbegin",extra);
+      const html=renderAbsenceRouting(absence)+renderRoomSummary(room)+(selfStudyChanged?`<div class="status ok">明示指定された自習を ${selfStudyChanged}件 反映しました。</div>`:renderSelfStudySummary(selfStudy))+renderWorkSummary(work)+renderOtherSummary(other);
+      box.innerHTML=html||`<div class="status ok">自動反映する変更はありません。</div>`;
     }
     return result;
   };
