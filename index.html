@@ -9,7 +9,7 @@
 <body>
 <header class="topbar">
   <div><h1>時間割変更アプリ</h1><p>個人利用・GitHub Pages版 / データはブラウザに保存</p></div>
-  <span class="version">v1.14</span>
+  <span class="version">v1.15</span>
 </header>
 <nav class="tabs">
   <button data-tab="daily" class="active">日々の変更</button>
@@ -48,8 +48,8 @@
   <div class="card"><h2>変更条件の一括入力</h2><p class="muted">1行につき1条件。例：<code>田中,不在,月,1-4</code> / <code>体育館,使用不可,火,3-5</code></p><textarea id="conditionText" rows="10" placeholder="田中,不在,月,1-4&#10;佐藤,不在,火,終日&#10;体育館,使用不可,木,3-5"></textarea><div class="actions"><button id="analyzeConditionsBtn" class="primary">条件を解析</button><button id="applyConditionsBtn" class="sub">安全な変更だけ自動反映</button></div><div id="conditionResult"></div></div>
 </section>
 <section id="teachers" class="tab">
-  <div class="card"><h2>教員設定</h2><p class="muted">教員ごとに担当教科・勤務形態・勤務可能校時を設定します。教員別一覧は下の教科順で自動整列します。</p>
-    <div class="teacher-add-form"><div><label>教員名</label><input id="teacherName" placeholder="例：田中"></div><div><label>担当教科</label><select id="teacherDepartment"></select></div><div><label>勤務区分</label><select id="teacherEmployment"><option value="常勤">常勤</option><option value="非常勤">非常勤</option><option value="ALT">ALT</option><option value="実習助手">実習助手</option><option value="中学">中学</option></select></div><button id="addTeacherBtn" class="primary">教員を追加</button></div>
+  <div class="card"><h2>教員設定</h2><p class="muted">教員ごとに担当教科・勤務区分・勤務可能校時を設定します。教員別一覧は下の教科順で自動整列します。</p>
+    <div class="teacher-add-form"><div><label>教員名</label><input id="teacherName" placeholder="例：田中"></div><div><label>担当教科</label><select id="teacherDepartment"></select></div><div><label>勤務区分</label><select id="teacherEmployment"><option value="常勤">常勤</option><option value="非常勤">非常勤</option><option value="ALT">ALT</option><option value="実習助手">実習助手</option><option value="中学">中学</option><option value="管理職">管理職</option></select></div><button id="addTeacherBtn" class="primary">教員を追加</button></div>
     <div class="department-order">表示順：国語 → 数学 → 英語 → 理科 → 社会 → 芸術 → 家庭科 → 体育 → 商業</div>
     <div id="teacherCards" class="teacher-cards"></div>
   </div>
