@@ -13,10 +13,10 @@
   function activePeriods(){
     return [...document.querySelectorAll('.structured-period-check:checked')].map(x=>+x.value).sort((a,b)=>a-b);
   }
-  function periodsToLegacy(ps){
+  function periodRuns(ps){
     const a=[...new Set(ps)].sort((x,y)=>x-y);
-    if(!a.length) return "";
-    if(a.length===ALL_PERIODS.length && ALL_PERIODS.every(p=>a.includes(p))) return "終日";
+    if(!a.length) return [];
+    if(a.length===ALL_PERIODS.length && ALL_PERIODS.every(p=>a.includes(p))) return ["終日"];
     const runs=[]; let start=a[0], prev=a[0];
     for(let i=1;i<=a.length;i++){
       const cur=a[i];
@@ -24,15 +24,16 @@
       runs.push(start===prev?String(start):`${start}-${prev}`);
       start=cur; prev=cur;
     }
-    return runs.join(";");
+    return runs;
   }
-  function conditionToLegacy(c){
-    if(!c.enabled) return "";
-    return `${c.target},${c.condition},${c.day},${periodsToLegacy(c.periods)}`;
+  function periodsToLegacy(ps){ return periodRuns(ps).join("・"); }
+  function conditionToLegacyLines(c){
+    if(!c.enabled) return [];
+    return periodRuns(c.periods).map(run=>`${c.target},${c.condition},${c.day},${run}`);
   }
   function syncLegacyTextarea(){
     const ta=$("#conditionText"); if(!ta) return;
-    ta.value=state.structuredConditions.map(conditionToLegacy).filter(Boolean).join("\n");
+    ta.value=state.structuredConditions.flatMap(conditionToLegacyLines).join("\n");
   }
 
   function ensureStructuredUi(){
@@ -108,15 +109,7 @@
     const msg=$("#structuredConditionMessage");
     if(!target){ if(msg) msg.innerHTML=`<div class="status warn">対象を選択または入力してください。</div>`; return; }
     if(!periods.length){ if(msg) msg.innerHTML=`<div class="status warn">校時を1つ以上選択してください。</div>`; return; }
-    const data={
-      id: editingConditionId || condId(),
-      enabled:true,
-      targetType:$("#conditionTargetType").value,
-      target,
-      condition:$("#conditionKind").value,
-      day:$("#conditionDay").value,
-      periods
-    };
+    const data={id:editingConditionId||condId(),enabled:true,targetType:$("#conditionTargetType").value,target,condition:$("#conditionKind").value,day:$("#conditionDay").value,periods};
     const i=state.structuredConditions.findIndex(c=>c.id===editingConditionId);
     if(i>=0){ data.enabled=state.structuredConditions[i].enabled!==false; state.structuredConditions[i]=data; }
     else state.structuredConditions.push(data);
@@ -156,9 +149,7 @@
         <div class="condition-summary"><strong>${esc(c.target)}</strong>｜${esc(c.condition)}｜${esc(c.day)}曜日｜${esc((c.periods||[]).map(p=>`${p}限`).join("・"))}</div>
         <div class="condition-item-actions"><button type="button" class="sub structured-condition-edit" data-id="${esc(c.id)}">編集</button><button type="button" class="danger-outline structured-condition-delete" data-id="${esc(c.id)}">削除</button></div>
       </div>`).join("") : `<p class="muted">登録されている条件はありません。</p>`;
-    $$(".structured-condition-enabled").forEach(x=>x.onchange=()=>{
-      const c=state.structuredConditions.find(c=>c.id===x.dataset.id); if(c){c.enabled=x.checked;save();syncLegacyTextarea();renderStructuredConditions();}
-    });
+    $$(".structured-condition-enabled").forEach(x=>x.onchange=()=>{ const c=state.structuredConditions.find(c=>c.id===x.dataset.id); if(c){c.enabled=x.checked;save();syncLegacyTextarea();renderStructuredConditions();} });
     $$(".structured-condition-edit").forEach(b=>b.onclick=()=>editStructuredCondition(b.dataset.id));
     $$(".structured-condition-delete").forEach(b=>b.onclick=()=>deleteStructuredCondition(b.dataset.id));
     syncLegacyTextarea();
@@ -185,12 +176,7 @@
   document.head.appendChild(style);
 
   const previousRenderAll=renderAll;
-  renderAll=function(){
-    previousRenderAll();
-    ensureStructuredUi();
-    refreshConditionTarget();
-    renderStructuredConditions();
-  };
+  renderAll=function(){ previousRenderAll(); ensureStructuredUi(); refreshConditionTarget(); renderStructuredConditions(); };
 
   ensureStructuredUi();
   renderStructuredConditions();
