@@ -14,7 +14,7 @@
     return [...document.querySelectorAll('.structured-period-check:checked')].map(x=>+x.value).sort((a,b)=>a-b);
   }
   function periodRuns(ps){
-    const a=[...new Set(ps)].sort((x,y)=>x-y);
+    const a=[...new Set(ps||[])].sort((x,y)=>x-y);
     if(!a.length) return [];
     if(a.length===ALL_PERIODS.length && ALL_PERIODS.every(p=>a.includes(p))) return ["終日"];
     const runs=[]; let start=a[0], prev=a[0];
@@ -26,14 +26,25 @@
     }
     return runs;
   }
-  function periodsToLegacy(ps){ return periodRuns(ps).join("・"); }
-  function conditionToLegacyLines(c){
-    if(!c.enabled) return [];
-    return periodRuns(c.periods).map(run=>`${c.target},${c.condition},${c.day},${run}`);
+  function periodsText(ps){ return periodRuns(ps).join("・"); }
+  function defaultConditionDate(){ return currentDate() || isoLocal(new Date()); }
+
+  function migrateWeekdayConditions(){
+    const baseDate=defaultConditionDate();
+    const dates=weekDates(baseDate);
+    let changed=false;
+    state.structuredConditions.forEach(c=>{
+      if(!c.date && c.day && dates[c.day]){ c.date=dates[c.day]; changed=true; }
+      if(c.date){ const d=dayNameForDate(c.date); if(d && c.day!==d){ c.day=d; changed=true; } }
+    });
+    if(changed) save();
   }
-  function syncLegacyTextarea(){
+
+  function syncHiddenTextarea(){
     const ta=$("#conditionText"); if(!ta) return;
-    ta.value=state.structuredConditions.flatMap(conditionToLegacyLines).join("\n");
+    ta.value=state.structuredConditions.filter(c=>c.enabled!==false).flatMap(c=>
+      periodRuns(c.periods).map(run=>`${c.target},${c.condition},${c.date||""},${run}`)
+    ).join("\n");
   }
 
   function ensureStructuredUi(){
@@ -41,16 +52,16 @@
     const card=ta.closest(".card"); if(!card) return;
     const h2=card.querySelector("h2"); if(h2) h2.textContent="変更条件";
     const desc=card.querySelector("p.muted");
-    if(desc) desc.textContent="対象と条件を選び、該当する校時にチェックを入れて追加してください。";
+    if(desc) desc.textContent="日付・対象・条件を選び、該当する校時にチェックを入れて追加してください。";
 
     const editor=document.createElement("div");
     editor.id="structuredConditionEditor";
     editor.innerHTML=`
       <div class="structured-condition-grid">
+        <div><label>日付</label><input id="conditionDate" type="date"></div>
         <div><label>対象種別</label><select id="conditionTargetType"><option value="teacher">教員</option><option value="room">教室・施設</option></select></div>
         <div><label>対象</label><select id="conditionTarget"></select><input id="conditionTargetOther" class="hidden" placeholder="教室・施設名を入力"></div>
         <div><label>条件</label><select id="conditionKind"></select></div>
-        <div><label>曜日</label><select id="conditionDay">${DAYS.map(d=>`<option value="${d}">${d}曜日</option>`).join("")}</select></div>
       </div>
       <div class="structured-period-area">
         <label class="period-label">校時</label>
@@ -63,6 +74,7 @@
     ta.parentNode.insertBefore(editor,ta);
     ta.classList.add("hidden");
 
+    $("#conditionDate").value=defaultConditionDate();
     $("#conditionTargetType").onchange=refreshConditionTarget;
     $("#conditionTarget").onchange=()=>{
       const other=$("#conditionTargetOther");
@@ -88,7 +100,6 @@
       const rooms=knownRooms();
       target.innerHTML=rooms.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("")+`<option value="__other__">その他（直接入力）</option>`;
       kind.innerHTML=`<option value="使用不可">使用不可</option>`;
-      if(other) other.classList.toggle("hidden",target.value!=="__other__");
     }
     if([...target.options].some(o=>o.value===old)) target.value=old;
     if(other) other.classList.toggle("hidden",target.value!=="__other__");
@@ -104,61 +115,117 @@
     const sel=$("#conditionTarget"); if(!sel) return "";
     return sel.value==="__other__" ? $("#conditionTargetOther")?.value.trim() || "" : sel.value;
   }
+
   function saveStructuredCondition(){
+    const date=$("#conditionDate")?.value || "";
+    const day=dayNameForDate(date);
     const target=readTarget(), periods=activePeriods();
     const msg=$("#structuredConditionMessage");
+    if(!date){ if(msg) msg.innerHTML=`<div class="status warn">日付を選択してください。</div>`; return; }
+    if(!day){ if(msg) msg.innerHTML=`<div class="status warn">土日以外の日付を選択してください。</div>`; return; }
     if(!target){ if(msg) msg.innerHTML=`<div class="status warn">対象を選択または入力してください。</div>`; return; }
     if(!periods.length){ if(msg) msg.innerHTML=`<div class="status warn">校時を1つ以上選択してください。</div>`; return; }
-    const data={id:editingConditionId||condId(),enabled:true,targetType:$("#conditionTargetType").value,target,condition:$("#conditionKind").value,day:$("#conditionDay").value,periods};
+    const data={id:editingConditionId||condId(),enabled:true,targetType:$("#conditionTargetType").value,target,condition:$("#conditionKind").value,date,day,periods};
     const i=state.structuredConditions.findIndex(c=>c.id===editingConditionId);
     if(i>=0){ data.enabled=state.structuredConditions[i].enabled!==false; state.structuredConditions[i]=data; }
     else state.structuredConditions.push(data);
-    addHistory(i>=0?"変更条件編集":"変更条件追加",`${target} ${data.condition} ${data.day} ${periodsToLegacy(periods)}`);
-    save(); syncLegacyTextarea(); renderStructuredConditions(); resetStructuredEditor();
+    addHistory(i>=0?"変更条件編集":"変更条件追加",`${date} ${target} ${data.condition} ${periodsText(periods)}`);
+    save(); syncHiddenTextarea(); renderStructuredConditions(); resetStructuredEditor();
     if(msg) msg.innerHTML=`<div class="status ok">条件を${i>=0?"更新":"追加"}しました。</div>`;
   }
+
   function resetStructuredEditor(){
     editingConditionId="";
     const btn=$("#addStructuredConditionBtn"); if(btn) btn.textContent="条件を追加";
     $("#cancelStructuredConditionEditBtn")?.classList.add("hidden");
-    $("#conditionTargetType").value="teacher";
+    if($("#conditionDate")) $("#conditionDate").value=defaultConditionDate();
+    if($("#conditionTargetType")) $("#conditionTargetType").value="teacher";
     refreshConditionTarget(); setPeriodPreset("none");
     if($("#conditionTargetOther")) $("#conditionTargetOther").value="";
   }
+
   function editStructuredCondition(id){
     const c=state.structuredConditions.find(x=>x.id===id); if(!c) return;
     editingConditionId=id;
+    $("#conditionDate").value=c.date||defaultConditionDate();
     $("#conditionTargetType").value=c.targetType||"teacher"; refreshConditionTarget();
     const sel=$("#conditionTarget");
     if([...sel.options].some(o=>o.value===c.target)) sel.value=c.target;
     else { sel.value="__other__"; $("#conditionTargetOther").value=c.target; $("#conditionTargetOther").classList.remove("hidden"); }
-    $("#conditionKind").value=c.condition; $("#conditionDay").value=c.day;
+    $("#conditionKind").value=c.condition;
     $$(".structured-period-check").forEach(x=>x.checked=(c.periods||[]).includes(+x.value));
     $("#addStructuredConditionBtn").textContent="条件を更新";
     $("#cancelStructuredConditionEditBtn").classList.remove("hidden");
   }
+
   function deleteStructuredCondition(id){
     state.structuredConditions=state.structuredConditions.filter(c=>c.id!==id);
-    addHistory("変更条件削除","登録条件を削除"); save(); syncLegacyTextarea(); renderStructuredConditions();
-  }
-  function renderStructuredConditions(){
-    const box=$("#structuredConditionList"); if(!box) return;
-    box.innerHTML=state.structuredConditions.length ? state.structuredConditions.map(c=>`
-      <div class="structured-condition-item ${c.enabled===false?"disabled-condition":""}">
-        <label class="condition-enabled"><input type="checkbox" class="structured-condition-enabled" data-id="${esc(c.id)}" ${c.enabled===false?"":"checked"}></label>
-        <div class="condition-summary"><strong>${esc(c.target)}</strong>｜${esc(c.condition)}｜${esc(c.day)}曜日｜${esc((c.periods||[]).map(p=>`${p}限`).join("・"))}</div>
-        <div class="condition-item-actions"><button type="button" class="sub structured-condition-edit" data-id="${esc(c.id)}">編集</button><button type="button" class="danger-outline structured-condition-delete" data-id="${esc(c.id)}">削除</button></div>
-      </div>`).join("") : `<p class="muted">登録されている条件はありません。</p>`;
-    $$(".structured-condition-enabled").forEach(x=>x.onchange=()=>{ const c=state.structuredConditions.find(c=>c.id===x.dataset.id); if(c){c.enabled=x.checked;save();syncLegacyTextarea();renderStructuredConditions();} });
-    $$(".structured-condition-edit").forEach(b=>b.onclick=()=>editStructuredCondition(b.dataset.id));
-    $$(".structured-condition-delete").forEach(b=>b.onclick=()=>deleteStructuredCondition(b.dataset.id));
-    syncLegacyTextarea();
+    addHistory("変更条件削除","登録条件を削除"); save(); syncHiddenTextarea(); renderStructuredConditions();
   }
 
-  const previousAnalyzeConditions=analyzeConditions;
-  analyzeConditions=function(){ syncLegacyTextarea(); return previousAnalyzeConditions(); };
-  const previousApplyConditions=applyConditions;
-  applyConditions=function(){ syncLegacyTextarea(); return previousApplyConditions(); };
+  function renderStructuredConditions(){
+    const box=$("#structuredConditionList"); if(!box) return;
+    const sorted=[...state.structuredConditions].sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.target||"").localeCompare(b.target||"","ja"));
+    box.innerHTML=sorted.length ? sorted.map(c=>{
+      const day=dayNameForDate(c.date)||c.day||"";
+      return `<div class="structured-condition-item ${c.enabled===false?"disabled-condition":""}">
+        <label class="condition-enabled"><input type="checkbox" class="structured-condition-enabled" data-id="${esc(c.id)}" ${c.enabled===false?"":"checked"}></label>
+        <div class="condition-summary"><strong>${esc(c.date||"日付未設定")}${day?`（${esc(day)}）`:""}</strong>｜${esc(c.target)}｜${esc(c.condition)}｜${esc((c.periods||[]).map(p=>`${p}限`).join("・"))}</div>
+        <div class="condition-item-actions"><button type="button" class="sub structured-condition-edit" data-id="${esc(c.id)}">編集</button><button type="button" class="danger-outline structured-condition-delete" data-id="${esc(c.id)}">削除</button></div>
+      </div>`;
+    }).join("") : `<p class="muted">登録されている条件はありません。</p>`;
+    $$(".structured-condition-enabled").forEach(x=>x.onchange=()=>{ const c=state.structuredConditions.find(c=>c.id===x.dataset.id); if(c){c.enabled=x.checked;save();syncHiddenTextarea();renderStructuredConditions();} });
+    $$(".structured-condition-edit").forEach(b=>b.onclick=()=>editStructuredCondition(b.dataset.id));
+    $$(".structured-condition-delete").forEach(b=>b.onclick=()=>deleteStructuredCondition(b.dataset.id));
+    syncHiddenTextarea();
+  }
+
+  function analyzeStructuredConditions(){
+    const issues=[],safe=[],seen=new Set();
+    state.structuredConditions.filter(c=>c.enabled!==false).forEach(c=>{
+      const date=c.date,day=dayNameForDate(date);
+      if(!date||!day){ issues.push(`${c.target||"条件"}：日付が未設定または土日です`); return; }
+      const periods=(c.periods||[]).filter(p=>ALL_PERIODS.includes(+p)).map(Number);
+      if(!periods.length){ issues.push(`${date} ${c.target}：校時が未設定です`); return; }
+      if(c.condition==="不在"){
+        state.classes.forEach(cls=>periods.filter(p=>periodsForClass(cls).includes(p)).forEach(p=>{
+          const l=getDaily(cls,date,day,p); if(!l||!(l.teachers||[]).includes(c.target)) return;
+          const k=`${date}-${l.groupId}-${p}-${c.target}`; if(seen.has(k)) return; seen.add(k);
+          if((l.teachers||[]).length>=2) safe.push({type:"absence",date,day,p,teacher:c.target,lesson:l});
+          else issues.push(`${date} ${participantsText(l)} ${p}限 ${l.subject}：${c.target}先生が単独担当`);
+        }));
+      }else if(c.condition==="使用不可"){
+        state.classes.forEach(cls=>periods.filter(p=>periodsForClass(cls).includes(p)).forEach(p=>{
+          const l=getDaily(cls,date,day,p); if(!l||!(l.rooms||[]).includes(c.target)) return;
+          const k=`room-${date}-${l.groupId}-${p}-${c.target}`; if(seen.has(k)) return; seen.add(k);
+          issues.push(`${date} ${participantsText(l)} ${p}限 ${l.subject}：${c.target}使用不可`);
+        }));
+      }else issues.push(`${date} ${c.target}：未対応条件 ${c.condition}`);
+    });
+    conditionCache={safe,issues};
+    $("#conditionResult").innerHTML=`<div class="status ${issues.length?"warn":"ok"}">自動反映可能 ${safe.length}件 / 要確認 ${issues.length}件</div>`+
+      safe.map(x=>`<div class="condition-item">${esc(x.date)} ${esc(participantsText(x.lesson))} ${x.p}限：${esc(x.teacher)} → （${esc(x.teacher)}）</div>`).join("")+
+      issues.map(x=>`<div class="condition-item">${esc(x)}</div>`).join("");
+    return conditionCache;
+  }
+
+  function applyStructuredConditions(){
+    const result=analyzeStructuredConditions();
+    (result.safe||[]).forEach(x=>{
+      const l=clone(x.lesson);
+      l.absent=Array.isArray(l.absent)?l.absent:[];
+      if(!l.absent.includes(x.teacher)) l.absent.push(x.teacher);
+      writeDailyGroup(x.date,x.day,x.p,l);
+      addHistory("条件自動反映",`${x.date} ${participantsText(l)} ${x.p}限 ${x.teacher}欠員`);
+    });
+    save(); renderAll(); alert(`${(result.safe||[]).length}件を反映しました。`);
+  }
+
+  function bindConditionActions(){
+    const a=$("#analyzeConditionsBtn"),b=$("#applyConditionsBtn");
+    if(a) a.onclick=analyzeStructuredConditions;
+    if(b) b.onclick=applyStructuredConditions;
+  }
 
   const style=document.createElement("style");
   style.textContent=`
@@ -176,9 +243,11 @@
   document.head.appendChild(style);
 
   const previousRenderAll=renderAll;
-  renderAll=function(){ previousRenderAll(); ensureStructuredUi(); refreshConditionTarget(); renderStructuredConditions(); };
+  renderAll=function(){ previousRenderAll(); ensureStructuredUi(); refreshConditionTarget(); renderStructuredConditions(); bindConditionActions(); };
 
+  migrateWeekdayConditions();
   ensureStructuredUi();
   renderStructuredConditions();
+  bindConditionActions();
   save();
 })();
