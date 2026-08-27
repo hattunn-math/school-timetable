@@ -14,7 +14,7 @@
   }
 
   function employmentRank(name){
-    const order = window.TEACHER_EMPLOYMENT_CATEGORIES || ["常勤","非常勤","ALT","実習助手","中学"];
+    const order = window.TEACHER_EMPLOYMENT_CATEGORIES || ["常勤","非常勤","ALT","実習助手","中学","管理職"];
     const i = order.indexOf(employmentCategoryOf(name));
     return i < 0 ? 999 : i;
   }
@@ -25,7 +25,7 @@
     const wrap = table.closest(".table-wrap");
     if(!wrap) return;
 
-    const employmentCategories = window.TEACHER_EMPLOYMENT_CATEGORIES || ["常勤","非常勤","ALT","実習助手","中学"];
+    const employmentCategories = window.TEACHER_EMPLOYMENT_CATEGORIES || ["常勤","非常勤","ALT","実習助手","中学","管理職"];
     const bar = document.createElement("div");
     bar.className = "teacher-day-filter-bar";
     bar.innerHTML = `
