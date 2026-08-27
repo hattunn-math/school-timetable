@@ -1,6 +1,7 @@
 (() => {
   let teacherDayDepartmentFilter = "";
   let teacherDayEmploymentFilter = "";
+  let teacherDayFreePeriodFilter = "";
   let teacherDaySortMode = "department";
 
   function teacherLessonCount(name, date, day){
@@ -17,6 +18,13 @@
     const order = window.TEACHER_EMPLOYMENT_CATEGORIES || ["常勤","非常勤","ALT","実習助手","中学","管理職"];
     const i = order.indexOf(employmentCategoryOf(name));
     return i < 0 ? 999 : i;
+  }
+
+  function isTeacherFreeAt(name,date,day,period){
+    if(!day || period === "") return true;
+    const p=+period;
+    if(!teacherAvailable(name,day,p)) return false;
+    return teacherEntriesForPeriod(name,date,day,p).length===0;
   }
 
   function ensureTeacherDayFilter(){
@@ -45,6 +53,13 @@
           </select>
         </div>
         <div>
+          <label for="teacherDayFreePeriodFilter">空いている校時</label>
+          <select id="teacherDayFreePeriodFilter">
+            <option value="">指定なし</option>
+            ${ALL_PERIODS.map(p=>`<option value="${p}">${p}限が空き</option>`).join("")}
+          </select>
+        </div>
+        <div>
           <label for="teacherDaySortMode">並び順</label>
           <select id="teacherDaySortMode">
             <option value="department">教科順</option>
@@ -68,6 +83,13 @@
     employmentSelect.value = teacherDayEmploymentFilter;
     employmentSelect.onchange = () => {
       teacherDayEmploymentFilter = employmentSelect.value;
+      applyTeacherDayFilterAndSort();
+    };
+
+    const freeSelect = $("#teacherDayFreePeriodFilter");
+    freeSelect.value = teacherDayFreePeriodFilter;
+    freeSelect.onchange = () => {
+      teacherDayFreePeriodFilter = freeSelect.value;
       applyTeacherDayFilterAndSort();
     };
 
@@ -106,7 +128,8 @@
       tr.dataset.employmentRank = String(employmentRank(name));
       const showDepartment = !teacherDayDepartmentFilter || department === teacherDayDepartmentFilter;
       const showEmployment = !teacherDayEmploymentFilter || employment === teacherDayEmploymentFilter;
-      const show = showDepartment && showEmployment;
+      const showFree = isTeacherFreeAt(name,date,day,teacherDayFreePeriodFilter);
+      const show = showDepartment && showEmployment && showFree;
       tr.style.display = show ? "" : "none";
       if(show) visible++;
 
@@ -137,14 +160,17 @@
     if(depSelect && depSelect.value !== teacherDayDepartmentFilter) depSelect.value = teacherDayDepartmentFilter;
     const employmentSelect = $("#teacherDayEmploymentFilter");
     if(employmentSelect && employmentSelect.value !== teacherDayEmploymentFilter) employmentSelect.value = teacherDayEmploymentFilter;
+    const freeSelect = $("#teacherDayFreePeriodFilter");
+    if(freeSelect && freeSelect.value !== teacherDayFreePeriodFilter) freeSelect.value = teacherDayFreePeriodFilter;
     const sortSelect = $("#teacherDaySortMode");
     if(sortSelect && sortSelect.value !== teacherDaySortMode) sortSelect.value = teacherDaySortMode;
 
     if(summary){
       const depText = teacherDayDepartmentFilter || "全教科";
       const employmentText = teacherDayEmploymentFilter || "全区分";
+      const freeText = teacherDayFreePeriodFilter!=="" ? `${teacherDayFreePeriodFilter}限が空き・勤務可能` : "空き校時指定なし";
       const sortText = teacherDaySortMode === "desc" ? "授業数の多い順" : teacherDaySortMode === "asc" ? "授業数の少ない順" : teacherDaySortMode === "employment" ? "勤務区分順" : "教科順";
-      summary.textContent = `${depText}・${employmentText}：${visible}/${total}名を表示／${sortText}`;
+      summary.textContent = `${depText}・${employmentText}・${freeText}：${visible}/${total}名を表示／${sortText}`;
     }
   }
 
