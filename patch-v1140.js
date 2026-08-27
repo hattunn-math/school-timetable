@@ -1,5 +1,5 @@
 (() => {
-  const EMPLOYMENT_CATEGORIES = ["常勤","非常勤","ALT","実習助手","中学"];
+  const EMPLOYMENT_CATEGORIES = ["常勤","非常勤","ALT","実習助手","中学","管理職"];
   state.teacherCategories = state.teacherCategories && typeof state.teacherCategories === "object" ? state.teacherCategories : {};
 
   function ensureTeacherCategories(){
