@@ -112,6 +112,9 @@
     save();renderAll();
   }
 
+  // 後続パッチからも矢印移動本体を呼べるよう公開する
+  window.arrowMove128=arrowMove128;
+
   function decorateArrowButtons128(){
     const table=$("#dailyTable"); if(!table) return;
     table.querySelectorAll("td.slot[data-class][data-date][data-day][data-period]").forEach(td=>{
