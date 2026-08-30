@@ -6,6 +6,7 @@
       const cls=td.dataset.class,date=td.dataset.date,day=td.dataset.day,p=+td.dataset.period;
       const l=getDaily(cls,date,day,p);
       if(!l){ td.querySelector(".cell-arrow-controls128")?.remove(); return; }
+
       let wrap=td.querySelector(".cell-arrow-controls128");
       if(!wrap){
         wrap=document.createElement("div");
@@ -13,6 +14,7 @@
         td.appendChild(wrap);
       }
       wrap.innerHTML="";
+
       const ps=periodsForClass(cls).map(Number);
       const make=(delta,label,title)=>{
         const b=document.createElement("button");
@@ -20,13 +22,17 @@
         b.className="cell-arrow128";
         b.textContent=label;
         b.title=title;
+        b.dataset.delta=String(delta);
         b.addEventListener("click",e=>{
-          e.preventDefault();e.stopPropagation();
-          if(typeof arrowMove128==="function") arrowMove128(td,delta);
+          e.preventDefault();
+          e.stopPropagation();
+          const mover=window.arrowMove128;
+          if(typeof mover==="function") mover(td,delta);
           else alert("矢印移動機能の読み込みに失敗しています。ページを再読み込みしてください。");
         });
         wrap.appendChild(b);
       };
+
       if(ps.includes(p-1)) make(-1,"▲","1校時上へ移動／入れ替え");
       if(ps.includes(p+1)) make(1,"▼","1校時下へ移動／入れ替え");
       if(!wrap.childElementCount) wrap.remove();
@@ -46,21 +52,27 @@
       padding:0!important;margin:0!important;border:1px solid #2f6f9f!important;border-radius:5px!important;
       background:#fff!important;color:#174e78!important;font-size:11px!important;font-weight:700!important;
       line-height:22px!important;box-shadow:0 1px 3px rgba(0,0,0,.18)!important;cursor:pointer!important;
-      opacity:1!important;visibility:visible!important;
+      opacity:1!important;visibility:visible!important;pointer-events:auto!important;
     }
     #dailyTable .cell-arrow128:hover{background:#eaf4fb!important}
   `;
   document.head.appendChild(style);
 
   const prevRenderDaily1281=renderDaily;
-  renderDaily=function(){const r=prevRenderDaily1281();setTimeout(installVisibleArrows1281,0);return r;};
-  const prevRenderAll1281=renderAll;
-  renderAll=function(){const r=prevRenderAll1281();setTimeout(installVisibleArrows1281,0);return r;};
+  renderDaily=function(){
+    const r=prevRenderDaily1281();
+    setTimeout(installVisibleArrows1281,0);
+    return r;
+  };
 
-  const table=$("#dailyTable");
-  if(table && typeof MutationObserver!=="undefined"){
-    const obs=new MutationObserver(()=>setTimeout(installVisibleArrows1281,0));
-    obs.observe(table,{childList:true,subtree:true});
-  }
+  const prevRenderAll1281=renderAll;
+  renderAll=function(){
+    const r=prevRenderAll1281();
+    setTimeout(installVisibleArrows1281,0);
+    return r;
+  };
+
+  // MutationObserverは使わない。ボタン自身のDOM更新を再検知して
+  // 無限に作り直すとクリックが成立しなくなるため。
   setTimeout(installVisibleArrows1281,0);
 })();
